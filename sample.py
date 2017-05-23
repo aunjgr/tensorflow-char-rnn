@@ -2,7 +2,6 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
 import argparse
-import codecs
 import json
 import os
 
@@ -12,7 +11,7 @@ from train import load_vocab
 
 def main():
     parser = argparse.ArgumentParser()
-    
+
     # Parameters for using saved best models.
     parser.add_argument('--init_dir', type=str, default='',
                         help='continue from the outputs in the given directory')
@@ -23,12 +22,12 @@ def main():
                         help=('Temperature for sampling from softmax: '
                               'higher temperature, more random; '
                               'lower temperature, more greedy.'))
-    
+
     parser.add_argument('--max_prob', dest='max_prob', action='store_true',
                         help='always pick the most probable next character in sampling')
 
     parser.set_defaults(max_prob=False)
-    
+
     parser.add_argument('--start_text', type=str,
                         default='The meaning of life is ',
                         help='the text to start with')
@@ -54,7 +53,7 @@ def main():
     parser.add_argument('--debug', dest='debug', action='store_true',
                         help='show debug information')
     parser.set_defaults(debug=False)
-    
+
     args = parser.parse_args()
 
     # Prepare parameters.
@@ -68,7 +67,7 @@ def main():
     else:
         args.encoding = 'utf-8'
     args.vocab_file = os.path.join(args.init_dir, 'vocab.json')
-    vocab_index_dict, index_vocab_dict, vocab_size = load_vocab(args.vocab_file, args.encoding)
+    vocab_index_dict, index_vocab_dict, vocab_size = load_vocab(args.vocab_file)
 
     # Create graphs
     logging.info('Creating graph')
@@ -84,20 +83,20 @@ def main():
         with tf.Session(graph=graph) as session:
             saver.restore(session, best_model)
             ppl = test_model.run_epoch(session, len(args.example_text),
-                                        example_batches,
-                                        is_training=False)[0]
+                                       example_batches,
+                                       is_training=False)[0]
             print('Example text is: %s' % args.example_text)
             print('Perplexity is: %s' % ppl)
     else:
         if args.seed >= 0:
             np.random.seed(args.seed)
-        # Sampling a sequence 
+        # Sampling a sequence
         with tf.Session(graph=graph) as session:
             saver.restore(session, best_model)
             sample = test_model.sample_seq(session, args.length, args.start_text,
-                                            vocab_index_dict, index_vocab_dict,
-                                            temperature=args.temperature,
-                                            max_prob=args.max_prob)
+                                           vocab_index_dict, index_vocab_dict,
+                                           temperature=args.temperature,
+                                           max_prob=args.max_prob)
             print('Sampled text is:\n%s' % sample)
         return sample
 
